@@ -1,4 +1,4 @@
-/* @tailwind base;
+@tailwind base;
 @tailwind components;
 @tailwind utilities;
 
@@ -30,8 +30,8 @@ body {
   .text-balance {
     text-wrap: balance;
   }
-} */
-
-form {
-  margin: 10px;
 }
+
+/* form {
+  margin: 10px;
+} */
