@@ -3,85 +3,68 @@ const fs = require("fs");
 
 export class TickerDumper {
   /**
-   * Saves an array of objects to a local file in JSON format.
-   * This function uses synchronous file writing, which blocks the execution
-   * until the file is written. The file will be overwritten if it exists.
+   * Loads and returns the string content from the 'inputstring.txt' file synchronously.
+   * This is the reciprocal operation to saving the string to the file.
    *
-   * @template T - The type of objects in the array.
-   * @param {string} filename - The name/path of the file to save (e.g., 'output.json').
-   * @param {T[]} data - The array of objects to save.
+   * @returns The string content of the file.
+   * @throws An error if the file cannot be read (e.g., file not found or permission issues).
    */
-  static saveArrayToFileSync<T>(filename: string, data: T[]): void {
+  static loadStringFromInputFile(): string {
+    // Define the target filename
+    const filename = "inputstring.txt";
+
+    // Resolve the absolute path to the file
+    const absolutePath = path.resolve(filename);
+
     try {
-      // 1. Convert the array of objects into a formatted JSON string.
-      // We use JSON.stringify with null and 2 for indentation, making the output readable.
-      const jsonContent = JSON.stringify(data, null, 2);
+      // Read the content from the file synchronously using 'utf8' encoding.
+      const content = fs.readFileSync(absolutePath, "utf8");
 
-      // 2. Determine the absolute path for saving the file (optional, but good practice).
-      const filePath = path.resolve(filename);
-
-      // 3. Use fs.writeFileSync to write the JSON content to the file.
-      // If the file already exists, it is completely overwritten.
-      fs.writeFileSync(filePath, jsonContent, { encoding: "utf-8" });
-
-      console.log(`✅ Success: Data saved to file system at: ${filePath}`);
-      console.log(`File size: ${fs.statSync(filePath).size} bytes`);
+      // console.log(`✅ Success: Content loaded from ${absolutePath}`);
+      return content;
     } catch (error) {
-      // Handle potential errors like permissions issues or invalid file paths.
+      // Check for file-not-found specifically (often 'ENOENT')
+      if (
+        error &&
+        typeof error === "object" &&
+        "code" in error &&
+        error.code === "ENOENT"
+      ) {
+        console.warn(
+          `⚠️ Warning: File not found at ${absolutePath}. Returning empty string.`
+        );
+        return ""; // Return empty string if file is just missing
+      }
+
       console.error(
-        `❌ Error saving file ${filename}:`,
-        error instanceof Error ? error.message : "An unknown error occurred."
+        `❌ Error loading string from file ${filename}:`,
+        error instanceof Error
+          ? error.message
+          : "An unknown error occurred during file reading."
       );
+      // Re-throw the error for other types of failures (e.g., permissions)
+      throw new Error(`Failed to load string content from: ${filename}`);
     }
   }
 
   /**
-   * Reads a local JSON file and parses its contents back into an array of objects.
-   * This function uses synchronous file reading.
+   * Saves a specified string to a file in the local filesystem using synchronous I/O.
+   * NOTE: This function requires a Node.js environment to run and should be used
+   * sparingly in server environments as it blocks the main thread.
    *
-   * @template T - The expected type of objects in the array.
-   * @param {string} filename - The name/path of the file to read.
-   * @returns {T[] | null} The parsed array of objects, or null if loading failed.
+   * @param content The string content to be written to the file.
+   * @param filename The name of the file to save (e.g., 'inputstring.txt').
    */
-  static loadArrayFromFileSync<T>(filename: string): T[] | null {
-    const filePath = path.resolve(filename);
-
+  static saveStringToFile(filename: string, content: string): void {
     try {
-      // 1. Read the file contents as a string.
-      const fileContent = fs.readFileSync(filePath, { encoding: "utf-8" });
-
-      // 2. Parse the JSON string back into a JavaScript array.
-      const parsedData: T[] = JSON.parse(fileContent);
-
-      console.log(`\n✅ Success: Data loaded and parsed from: ${filePath}`);
-
-      // 3. Optional Date Revival: If an object has a 'timestamp' property that is a string,
-      // convert it back into a JavaScript Date object for correct typing and usage.
-      return parsedData.map((item) => {
-        if ("timestamp" in item && typeof item.timestamp === "string") {
-          // We use 'as unknown as T' to safely assert the type after modification
-          return {
-            ...item,
-            timestamp: new Date(item.timestamp),
-          } as unknown as T;
-        }
-        return item;
-      });
+      // Using fs.writeFileSync as requested. This is a synchronous operation.
+      // It creates the file if it doesn't exist or overwrites it if it does.
+      fs.writeFileSync(filename, content, { encoding: "utf-8" });
+      console.log(`Successfully saved ${content.length} bytes to ${filename}`);
     } catch (error) {
-      // Handle common file system and parsing errors.
-      if (error instanceof Error) {
-        if ("code" in error && error.code === "ENOENT") {
-          console.error(`❌ Error: File not found at ${filePath}.`);
-        } else if (error instanceof SyntaxError) {
-          console.error(`❌ Error: File content is not valid JSON.`);
-        } else {
-          console.error(
-            `❌ An unexpected error occurred while loading ${filename}:`,
-            error.message
-          );
-        }
-      }
-      return null;
+      console.error(`Error saving file ${filename}:`, error);
+      // Throw the error immediately as synchronous functions do not return a Promise
+      throw new Error(`Failed to write file: ${filename}`);
     }
   }
 }

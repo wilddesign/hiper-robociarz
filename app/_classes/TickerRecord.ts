@@ -15,7 +15,6 @@ export class TickerRecordData {
   data: ITickerRecord[] = [];
   constructor(base64String: string) {
     this.data = parseBase64CsvWithPapaParse(base64String);
-    TickerDumper.saveArrayToFileSync("dumptickers.txt", this.data);
   }
 }
 
