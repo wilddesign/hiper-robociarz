@@ -28,7 +28,7 @@ export class ReportCreator {
   ): string {
     return input
       .map((entry) => this.generateReportBasedOnPriceChange(entry))
-      .join();
+      .join("");
   }
 
   static generateReportListAllStocks(input: ITickerRecord[]): string {
