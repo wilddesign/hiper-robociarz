@@ -15,6 +15,41 @@ function delay(ms: number): Promise<void> {
 }
 
 export class Actuator {
+  private static isLastDay(dt: Date) {
+    return new Date(dt.getTime() + 86400000).getDate() === 1;
+  }
+
+  static async weekReminderSchedule(stocks: ITickerRecord[]) {
+    const today = new Date().getDay();
+    if (today == 6) {
+      Actuator.getAllStocksReminder(stocks);
+    }
+  }
+
+  static async dayWeekMonthSchedule(scheduleRequest: ITickerRecord[]) {
+    Actuator.getStockDataAnalyzeAndReport({
+      frequency: Frequencies.DAILY,
+      cutoff: 5,
+      stocks: scheduleRequest,
+    });
+    const today = new Date().getDay();
+    if (today == 6) {
+      Actuator.getStockDataAnalyzeAndReport({
+        frequency: Frequencies.WEEKLY,
+        cutoff: 5,
+        stocks: scheduleRequest,
+      });
+    }
+    const now = new Date();
+    if (this.isLastDay(now)) {
+      Actuator.getStockDataAnalyzeAndReport({
+        frequency: Frequencies.MONTHLY,
+        cutoff: 10,
+        stocks: scheduleRequest,
+      });
+    }
+  }
+
   static async getStockDataAnalyzeAndReport(
     input: GetStockDataAnalyzeAndReport
   ) {
@@ -40,6 +75,13 @@ export class Actuator {
     MailSender.send(
       ReportCreator.generateReportListBasedOnPriceChange(reportInputs),
       `${input.frequency} report for stocks`
+    );
+  }
+
+  static async getAllStocksReminder(stocks: ITickerRecord[]) {
+    MailSender.send(
+      ReportCreator.generateReportListAllStocks(stocks),
+      `Reminder for stocks`
     );
   }
 }

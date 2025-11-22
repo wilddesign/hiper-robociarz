@@ -56,7 +56,7 @@ export default function Home() {
     setAdd("");
     setTrigger(!trigger);
   };
-  const handleSubmitAdd = (event: { preventDefault: () => void }) => {
+  const handleSubmitAdd = async (event: { preventDefault: () => void }) => {
     event.preventDefault();
     if (!token || !csvBuffer) {
       return;
@@ -66,7 +66,7 @@ export default function Home() {
 
     console.log("Submitting Base64-encoded CSV buffer to backend...");
 
-    addTicker(base64Content);
+    await addTicker(base64Content);
 
     setCsvBuffer(null);
     setTrigger(!trigger);

@@ -25,10 +25,6 @@ export class RequestScheduler {
     this.timeOuts = [];
   }
 
-  private static isLastDay(dt: Date) {
-    return new Date(dt.getTime() + 86400000).getDate() === 1;
-  }
-
   /**
    * Schedules a recurring task to start at a specific clock time today.
    * NOTE: This only adds the recurring part (the setInterval) to the schedules list.
@@ -51,6 +47,10 @@ export class RequestScheduler {
     );
 
     const initialTimeoutId = setTimeout(() => {
+      //first time run
+      Actuator.dayWeekMonthSchedule(scheduleRequest);
+      Actuator.weekReminderSchedule(scheduleRequest);
+      //then other runs
       RequestScheduler.addSchedule(scheduleRequest);
     }, initialDelay);
     this.timeOuts.push(initialTimeoutId);
@@ -59,27 +59,8 @@ export class RequestScheduler {
 
   static addSchedule(scheduleRequest: ITickerRecord[]) {
     const intervalId = setInterval(async () => {
-      Actuator.getStockDataAnalyzeAndReport({
-        frequency: Frequencies.DAILY,
-        cutoff: 0.05,
-        stocks: scheduleRequest,
-      });
-      const today = new Date().getDay();
-      if (today == 6) {
-        Actuator.getStockDataAnalyzeAndReport({
-          frequency: Frequencies.WEEKLY,
-          cutoff: 0.07,
-          stocks: scheduleRequest,
-        });
-      }
-      const now = new Date();
-      if (this.isLastDay(now)) {
-        Actuator.getStockDataAnalyzeAndReport({
-          frequency: Frequencies.MONTHLY,
-          cutoff: 0.1,
-          stocks: scheduleRequest,
-        });
-      }
+      Actuator.dayWeekMonthSchedule(scheduleRequest);
+      Actuator.weekReminderSchedule(scheduleRequest);
     }, 24 * 60 * 60000);
 
     this.schedules.push(intervalId);
