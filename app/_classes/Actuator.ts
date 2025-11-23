@@ -27,12 +27,14 @@ export class Actuator {
   }
 
   static async dayWeekMonthSchedule(scheduleRequest: ITickerRecord[]) {
-    Actuator.getStockDataAnalyzeAndReport({
-      frequency: Frequencies.DAILY,
-      cutoff: 5,
-      stocks: scheduleRequest,
-    });
     const today = new Date().getDay();
+    if (today != 6 && today != 0) {
+      Actuator.getStockDataAnalyzeAndReport({
+        frequency: Frequencies.DAILY,
+        cutoff: 5,
+        stocks: scheduleRequest,
+      });
+    }
     if (today == 6) {
       Actuator.getStockDataAnalyzeAndReport({
         frequency: Frequencies.WEEKLY,
