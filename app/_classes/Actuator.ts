@@ -2,12 +2,14 @@ import { DataAnalyzer } from "./DataAnalyzer";
 import { DataFetcher, Frequencies } from "./DataFetcher";
 import { MailSender } from "./MailSender";
 import { ReportCreator } from "./ReportCreator";
+import { Source } from "./RequestScheduler";
 import { ITickerRecord } from "./TickerRecord";
 
 type GetStockDataAnalyzeAndReport = {
   frequency: Frequencies;
   stocks: ITickerRecord[];
   cutoff: number;
+  source: Source;
 };
 
 function delay(ms: number): Promise<void> {
@@ -26,13 +28,17 @@ export class Actuator {
     }
   }
 
-  static async dayWeekMonthSchedule(scheduleRequest: ITickerRecord[]) {
+  static async dayWeekMonthSchedule(
+    scheduleRequest: ITickerRecord[],
+    source: Source
+  ) {
     const today = new Date().getDay();
     if (today != 6 && today != 0) {
       Actuator.getStockDataAnalyzeAndReport({
         frequency: Frequencies.DAILY,
         cutoff: 5,
         stocks: scheduleRequest,
+        source,
       });
     }
     if (today == 6) {
@@ -40,6 +46,7 @@ export class Actuator {
         frequency: Frequencies.WEEKLY,
         cutoff: 5,
         stocks: scheduleRequest,
+        source,
       });
     }
     const now = new Date();
@@ -48,6 +55,7 @@ export class Actuator {
         frequency: Frequencies.MONTHLY,
         cutoff: 10,
         stocks: scheduleRequest,
+        source,
       });
     }
   }
@@ -55,11 +63,14 @@ export class Actuator {
   static async getStockDataAnalyzeAndReport(
     input: GetStockDataAnalyzeAndReport
   ) {
-    const { stocks, frequency, cutoff } = input;
+    const { stocks, frequency, cutoff, source } = input;
     const reportInputs = [];
 
     for (const stock of stocks) {
-      const stockData = await DataFetcher.fetchData(frequency, stock.ticker);
+      const stockData =
+        source === Source.ALPHAVANTAGE
+          ? await DataFetcher.fetchData(frequency, stock.ticker)
+          : await DataFetcher.fetchDataStooq(frequency, stock.ticker);
       const change =
         DataAnalyzer.takeDifferenceBetweenCurrentAndLastClose(stockData);
       reportInputs.push({
@@ -67,7 +78,10 @@ export class Actuator {
         cutoffChange: cutoff,
         stock: stock,
       });
-      if (stocks.indexOf(stock) < stocks.length - 1) {
+      if (
+        stocks.indexOf(stock) < stocks.length - 1 &&
+        source === Source.ALPHAVANTAGE
+      ) {
         //alphavantage allows max 5 requests for free
         // so each run is delayed for one minute
         await delay(60000);

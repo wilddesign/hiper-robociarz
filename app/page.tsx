@@ -7,6 +7,7 @@ export default function Home() {
   const [add, setAdd] = useState("");
   const [token, setToken] = useState("");
   const [csvBuffer, setCsvBuffer] = useState(null);
+  const [csvBufferPolish, setCsvBufferPolish] = useState(null);
 
   async function getData() {
     const res = await fetch("/api/tickers", {
@@ -22,14 +23,15 @@ export default function Home() {
     return res.json();
   }
 
-  async function addTicker(ticker: string) {
+  async function addTicker(ticker: string, tickerPolish: string) {
     const res = await fetch("/api/tickers", {
       headers: {
         token: token,
       },
       method: "POST",
       body: new URLSearchParams({
-        ticker: ticker,
+        ticker,
+        tickerPolish,
       }),
     });
 
@@ -58,17 +60,19 @@ export default function Home() {
   };
   const handleSubmitAdd = async (event: { preventDefault: () => void }) => {
     event.preventDefault();
-    if (!token || !csvBuffer) {
+    if (!token || !csvBuffer || !csvBufferPolish) {
       return;
     }
 
     const base64Content = arrayBufferToBase64(csvBuffer);
+    const base64ContentPolish = arrayBufferToBase64(csvBufferPolish);
 
     console.log("Submitting Base64-encoded CSV buffer to backend...");
 
-    await addTicker(base64Content);
+    await addTicker(base64Content, base64ContentPolish);
 
     setCsvBuffer(null);
+    setCsvBufferPolish(null);
     setTrigger(!trigger);
   };
 
@@ -82,7 +86,7 @@ export default function Home() {
     return btoa(binary);
   };
 
-  const handleFileChange = (e) => {
+  const handleGlobalFileChange = (e) => {
     const file = e.target.files[0];
 
     setCsvBuffer(null);
@@ -92,6 +96,22 @@ export default function Home() {
 
       reader.onload = (event) => {
         setCsvBuffer(event.target.result);
+      };
+
+      reader.readAsArrayBuffer(file);
+    }
+  };
+
+  const handlePolishFileChange = (e) => {
+    const file = e.target.files[0];
+
+    setCsvBufferPolish(null);
+
+    if (file) {
+      const reader = new FileReader();
+
+      reader.onload = (event) => {
+        setCsvBufferPolish(event.target.result);
       };
 
       reader.readAsArrayBuffer(file);
@@ -178,16 +198,56 @@ export default function Home() {
                   List of Tracked Tickers:
                 </h3>
                 <div className="flex flex-wrap gap-2">
-                  {tickers.length ? (
-                    tickers.map((ticker) => (
-                      <span
-                        key={ticker.ticker}
-                        className="px-3 py-1 bg-gray-100 text-gray-700 text-sm rounded-full border border-gray-200 hover:bg-gray-200 transition duration-150" // Neutral badges
-                      >
-                        {ticker.ticker}
-                      </span>
-                    ))
+                  {/* Check if the main tickers array has two lists defined */}
+                  {tickers.length === 2 ? (
+                    <>
+                      {/* 1. First List of Tickers (e.g., Global/US) */}
+                      {tickers[0].length > 0 && (
+                        <div className="mb-4">
+                          <h3 className="text-md font-semibold text-gray-800 mb-2">
+                            Global Tickers
+                          </h3>
+                          <div className="flex flex-wrap gap-2">
+                            {tickers[0].map((ticker) => (
+                              <span
+                                key={`global-${ticker.ticker}`}
+                                className="px-3 py-1 bg-gray-100 text-gray-700 text-sm rounded-full border border-gray-200 hover:bg-gray-200 transition duration-150"
+                              >
+                                {ticker.ticker}
+                              </span>
+                            ))}
+                          </div>
+                        </div>
+                      )}
+
+                      {/* 2. Second List of Tickers (Polish Stocks 🇵🇱) */}
+                      {tickers[1].length > 0 && (
+                        <div>
+                          <h3 className="text-md font-semibold text-gray-800 mb-2">
+                            Polish Tickers 🇵🇱
+                          </h3>
+                          <div className="flex flex-wrap gap-2">
+                            {tickers[1].map((ticker) => (
+                              <span
+                                key={`pl-${ticker.ticker}`}
+                                className="px-3 py-1 bg-red-50 text-red-700 text-sm rounded-full border border-red-300 hover:bg-red-100 transition duration-150"
+                              >
+                                {ticker.ticker}
+                              </span>
+                            ))}
+                          </div>
+                        </div>
+                      )}
+
+                      {/* Fallback for when both lists are empty */}
+                      {tickers[0].length === 0 && tickers[1].length === 0 && (
+                        <p className="text-gray-500 italic">
+                          No tickers currently tracked in either list.
+                        </p>
+                      )}
+                    </>
                   ) : (
+                    /* Fallback for when the tickers structure isn't correct (e.g., not an array of two) */
                     <p className="text-gray-500 italic">
                       No tickers currently tracked.
                     </p>
@@ -219,33 +279,54 @@ export default function Home() {
                 {/* Lighter font weight */}
                 Add New Tickers
               </h2>
-              <form onSubmit={handleSubmitAdd} className="space-y-4">
+              <form onSubmit={handleSubmitAdd} className="space-y-6">
+                {" "}
+                {/* Increased spacing */}
+                {/* 1. Global/Default Tickers Input */}
                 <label className="block">
                   <span className="text-sm font-light text-gray-600 mb-2 block">
-                    {" "}
-                    {/* Lighter text, simpler font */}
-                    Upload CSV with Tickers:
+                    Upload CSV with Global Tickers:
                   </span>
                   <input
                     type="file"
                     accept=".csv, text/csv"
-                    onChange={handleFileChange}
+                    // You'll need a new handler for this file, e.g., handleGlobalFileChange
+                    onChange={handleGlobalFileChange}
                     className="block w-full text-sm text-gray-600
-                file:mr-4 file:py-2 file:px-4
-                file:rounded-md file:border file:border-gray-300
-                file:text-sm file:font-normal
-                file:bg-gray-50 file:text-gray-700
-                hover:file:bg-gray-100 cursor-pointer
-              " // Neutral file input styling
+      file:mr-4 file:py-2 file:px-4
+      file:rounded-md file:border file:border-gray-300
+      file:text-sm file:font-normal
+      file:bg-gray-50 file:text-gray-700
+      hover:file:bg-gray-100 cursor-pointer
+    "
+                  />
+                </label>
+                {/* 2. Polish Tickers Input 🇵🇱 */}
+                <label className="block">
+                  <span className="text-sm font-light text-gray-600 mb-2 block">
+                    Upload CSV with Polish Tickers 🇵🇱:
+                  </span>
+                  <input
+                    type="file"
+                    accept=".csv, text/csv"
+                    // You'll need a new handler for this file, e.g., handlePolishFileChange
+                    onChange={handlePolishFileChange}
+                    className="block w-full text-sm text-gray-600
+      file:mr-4 file:py-2 file:px-4
+      file:rounded-md file:border file:border-gray-300
+      file:text-sm file:font-normal
+      file:bg-red-50 file:text-red-700 // Slight red tint for Polish context
+      hover:file:bg-red-100 cursor-pointer
+    "
                   />
                 </label>
                 <button
                   type="submit"
-                  disabled={!token || !csvBuffer}
+                  // Assuming you need at least one file to submit
+                  disabled={!token || !csvBuffer || !csvBufferPolish}
                   className={`w-full text-base font-normal py-3 px-4 rounded-md transition duration-150 ${
-                    // Larger padding, normal font
-                    token && csvBuffer
-                      ? "bg-blue-500 text-white hover:bg-blue-600" // Subtle blue accent
+                    token && csvBuffer && csvBufferPolish
+                      ? "bg-blue-500 text-white hover:bg-blue-600"
                       : "bg-gray-200 text-gray-500 cursor-not-allowed"
                   }`}
                 >

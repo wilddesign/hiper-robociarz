@@ -9,10 +9,7 @@ export class TickerDumper {
    * @returns The string content of the file.
    * @throws An error if the file cannot be read (e.g., file not found or permission issues).
    */
-  static loadStringFromInputFile(): string {
-    // Define the target filename
-    const filename = "inputstring.txt";
-
+  static loadStringFromInputFile(filename: string): string {
     // Resolve the absolute path to the file
     const absolutePath = path.resolve(filename);
 

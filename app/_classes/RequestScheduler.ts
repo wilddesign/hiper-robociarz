@@ -1,14 +1,19 @@
 import { Actuator } from "./Actuator";
-import { Frequencies } from "./DataFetcher";
 import { ITickerRecord } from "./TickerRecord";
 
 type IntervalID = ReturnType<typeof setInterval>;
 
-export class RequestScheduler {
-  static schedules: IntervalID[] = [];
-  static timeOuts: IntervalID[] = [];
+export enum Source {
+  STOOQ, // 0
+  ALPHAVANTAGE,
+  // ... add more sources as needed
+}
 
-  static clearAllSchedules() {
+export class RequestScheduler {
+  private schedules: IntervalID[] = [];
+  private timeOuts: IntervalID[] = [];
+
+  public clearAllSchedules() {
     // Iterate over the schedules array and stop each interval
     this.schedules.forEach((intervalId) => {
       clearInterval(intervalId);
@@ -35,10 +40,11 @@ export class RequestScheduler {
    * @param startMinute The minute (0-59) to start.
    * @returns The TimeoutID for the initial delay (not the interval ID).
    */
-  public static addScheduleAtTime(
+  public addScheduleAtTime(
     startHour: number,
     startMinute: number,
-    scheduleRequest: ITickerRecord[]
+    scheduleRequest: ITickerRecord[],
+    source: Source = Source.ALPHAVANTAGE
   ): ReturnType<typeof setTimeout> {
     const initialDelay = calculateInitialDelay(startHour, startMinute);
 
@@ -48,18 +54,18 @@ export class RequestScheduler {
 
     const initialTimeoutId = setTimeout(() => {
       //first time run
-      Actuator.dayWeekMonthSchedule(scheduleRequest);
+      Actuator.dayWeekMonthSchedule(scheduleRequest, source);
       Actuator.weekReminderSchedule(scheduleRequest);
       //then other runs
-      RequestScheduler.addSchedule(scheduleRequest);
+      this.addSchedule(scheduleRequest, source);
     }, initialDelay);
     this.timeOuts.push(initialTimeoutId);
     return initialTimeoutId; // Return the initial Timeout ID if you need to cancel the startup
   }
 
-  static addSchedule(scheduleRequest: ITickerRecord[]) {
+  public addSchedule(scheduleRequest: ITickerRecord[], source: Source) {
     const intervalId = setInterval(async () => {
-      Actuator.dayWeekMonthSchedule(scheduleRequest);
+      Actuator.dayWeekMonthSchedule(scheduleRequest, source);
       Actuator.weekReminderSchedule(scheduleRequest);
     }, 24 * 60 * 60000);
 
