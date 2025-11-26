@@ -1,4 +1,4 @@
-import { Monitor } from "@/app/_classes/Monitor";
+import { GlobalMonitor, PolishMonitor } from "@/app/_classes/Monitor";
 import { TickerDumper } from "@/app/_classes/TickerDumper";
 import { TickerRecordData } from "@/app/_classes/TickerRecord";
 import { NextRequest, NextResponse } from "next/server";
@@ -15,7 +15,7 @@ try {
 
   // Check if data was successfully loaded and is not empty
   if (inputString && inputString.length > 0) {
-    Monitor.globalMonitor(inputString);
+    GlobalMonitor.monitor(inputString);
     console.log(
       "✅ Successfully loaded and scheduled tickers from inputstring.txt on startup."
     );
@@ -27,7 +27,7 @@ try {
   }
   // Check if data was successfully loaded and is not empty
   if (polishInputString && polishInputString.length > 0) {
-    Monitor.polishMonitor(polishInputString);
+    PolishMonitor.monitor(polishInputString);
     console.log(
       "✅ Successfully loaded and scheduled tickers from polishInputString.txt on startup."
     );
@@ -121,8 +121,8 @@ export async function POST(req: NextRequest) {
 
   if (token === TOKEN) {
     try {
-      if (data.ticker) Monitor.globalMonitor(data.ticker);
-      if (data.tickerPolish) Monitor.polishMonitor(data.tickerPolish);
+      if (data.ticker) GlobalMonitor.monitor(data.ticker);
+      if (data.tickerPolish) PolishMonitor.monitor(data.tickerPolish);
     } catch (error) {
       if (error instanceof Error) {
         console.error("\nParsing Error:", error.message);
