@@ -10,10 +10,10 @@ export enum Source {
 }
 
 export class RequestScheduler {
-  private schedules: IntervalID[] = [];
-  private timeOuts: IntervalID[] = [];
+  private static schedules: IntervalID[] = [];
+  private static timeOuts: IntervalID[] = [];
 
-  public clearAllSchedules() {
+  public static clearAllSchedules() {
     // Iterate over the schedules array and stop each interval
     this.schedules.forEach((intervalId) => {
       clearInterval(intervalId);
@@ -40,7 +40,7 @@ export class RequestScheduler {
    * @param startMinute The minute (0-59) to start.
    * @returns The TimeoutID for the initial delay (not the interval ID).
    */
-  public addScheduleAtTime(
+  public static addScheduleAtTime(
     startHour: number,
     startMinute: number,
     scheduleRequest: ITickerRecord[],
@@ -63,7 +63,7 @@ export class RequestScheduler {
     return initialTimeoutId; // Return the initial Timeout ID if you need to cancel the startup
   }
 
-  public addSchedule(scheduleRequest: ITickerRecord[], source: Source) {
+  public static addSchedule(scheduleRequest: ITickerRecord[], source: Source) {
     const intervalId = setInterval(async () => {
       Actuator.dayWeekMonthSchedule(scheduleRequest, source);
       Actuator.weekReminderSchedule(scheduleRequest);
@@ -74,6 +74,8 @@ export class RequestScheduler {
     return intervalId;
   }
 }
+
+export class PolishRequestScheduler extends RequestScheduler {}
 
 /**
  * Calculates the delay (in milliseconds) from now until a specific time today.
